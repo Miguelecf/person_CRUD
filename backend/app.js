@@ -1,23 +1,21 @@
 const express = require('express');
-const morgan = require('morgan');
+const mongoose = require('mongoose');
+const personRoutes = require('./routes/person.routes.js');
 const cors = require('cors');
+require('dotenv').config();
 
 const app = express();
-
-// Middlewares
-app.use(morgan('dev'));
 app.use(cors());
-app.use(express.json());
+app.use(express.json()); // Middleware para parsear JSON
 
-// Rutas de ejemplo
-app.get('/', (req, res) => {
-    res.json({ message: 'API funcionando' });
+mongoose.connect(process.env.MONGODB_URI)
+.then(() => {
+    console.log('Conectado a MongoDB');
+})
+.catch(err => {
+    console.error('Error al conectar a MongoDB:', err);
 });
 
-// Puerto
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Servidor escuchando en el puerto ${PORT}`);
-});
+app.use('/api/persons', personRoutes); // Usar las rutas de personas
 
-module.exports = app;
+module.exports = app; // Exporta la aplicación para usarla en otros archivos

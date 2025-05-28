@@ -17,7 +17,7 @@ const personSchema = new mongoose.Schema(
       required: true,
       unique: true,
       trim: true,
-      match: /^[0-9]{8}$/, // Solo números, exactamente 8 dígitos
+      match: /^[0-9]{7,8}$/, // Solo números, minimo 7 y máximo 8 dígitos
     },
     age: {
       type: Number,
