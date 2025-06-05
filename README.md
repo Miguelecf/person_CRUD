@@ -21,8 +21,7 @@ npm install
 cd ../frontend
 npm install
 
-Configuración
-Configurar variables de entorno en backend (.env) si es necesario (por ejemplo, URL base de la base de datos).
+# Configuración (.env), configura si usas puertos diferentes. MongoDB
 PORT=3001
 MONGODB_URI=mongodb://localhost:27017/crud-person
 
