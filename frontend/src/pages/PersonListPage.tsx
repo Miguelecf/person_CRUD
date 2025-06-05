@@ -1,60 +1,114 @@
-import { useEffect, useState } from "react";
-import { getAllPersons } from "../api/personApi";
+import { useState, useEffect } from "react";
+import PersonTable from "../components/person/PersonTable";
+import PersonForm from "../components/person/PersonForm";
+import Layout from "../components/Layout";
+import { getAllPersons, createPerson, updatePerson, deletePerson } from "../api/personApi";
 import type { Person } from "../types/person.types";
 
-function PersonListPage() {
-    const [persons, setPersons] = useState<Person[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+export default function PersonListPage() {
+  const [persons, setPersons] = useState<Person[]>([]);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPerson, setEditingPerson] = useState<Person | null>(null);
 
-    useEffect(() => {
-        async function fetchPersons() {
-            try {
-                const data = await getAllPersons();
-                setPersons(data);
-            } catch (err) {
-                setError("Failed to load persons");
-            } finally {
-                setLoading(false);
-            }
-        }
-        fetchPersons();
-    }, []);
+  useEffect(() => {
+    getAllPersons().then(setPersons).catch(console.error);
+  }, []);
 
-    if (loading) {
-        return <div>Loading...</div>;
+  // Crear nueva persona
+  const handleCreate = async (person: Person) => {
+    try {
+      const created = await createPerson(person); // Llamada a API
+      setPersons((prev) => [...prev, created]);   // Actualizo lista
+      setIsModalOpen(false);                       // Cierro modal
+    } catch (error) {
+      console.error("Error creando persona:", error);
     }
-    if (error) {
-        return <div>{error}</div>;
-    }
+  };
 
-    return (
-        <div>
-            <h1>Person List</h1>
-            <table>
-                <thead>
-                    <tr>
-                        <th>First Name</th>
-                        <th>Last Name</th>
-                        <th>DNI</th>
-                        <th>Age</th>
-                        <th>Email</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {persons.map((person) => (
-                        <tr key={person._id}>
-                            <td>{person.firstName}</td>
-                            <td>{person.lastName}</td>
-                            <td>{person.dni}</td>
-                            <td>{person.age}</td>
-                            <td>{person.email}</td>
-                        </tr>
-                    ))}
-                </tbody>
-            </table>
+  // Editar persona existente
+  const handleUpdate = async (person: Person) => {
+    if (!person._id) return; // Seguridad
+
+    try {
+      const updated = await updatePerson(person._id, person);
+      setPersons((prev) =>
+        prev.map((p) => (p._id === updated._id ? updated : p))
+      );
+      setEditingPerson(null);
+      setIsModalOpen(false);
+    } catch (error) {
+      console.error("Error actualizando persona:", error);
+    }
+  };
+
+  // Abrir modal para crear persona
+  const openCreateModal = () => {
+    setEditingPerson(null); // No hay persona a editar, es creación
+    setIsModalOpen(true);
+  };
+
+  // Abrir modal para editar persona
+  const openEditModal = (person: Person) => {
+    setEditingPerson(person);
+    setIsModalOpen(true);
+  };
+
+  // Borrar persona
+  const handleDelete = async (id: string) => {
+    try {
+      await deletePerson(id);
+      setPersons((prev) => prev.filter((p) => p._id !== id));
+    } catch (error) {
+      console.error("Error eliminando persona:", error);
+    }
+  };
+
+  // El submit del formulario decide si crea o actualiza
+  const handleSubmit = (person: Person) => {
+    if (person._id) {
+      handleUpdate(person);
+    } else {
+      handleCreate(person);
+    }
+  };
+
+  return (
+    <Layout>
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-xl font-semibold">Lista de Personas</h2>
+        <button
+          onClick={openCreateModal}
+          className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded"
+        >
+          Crear Persona
+        </button>
+      </div>
+
+      <PersonTable
+        persons={persons}
+        onEdit={openEditModal}
+        onDelete={handleDelete}
+      />
+
+      {isModalOpen && (
+        <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50">
+          <div className="bg-gray-900 p-6 rounded shadow-lg w-full max-w-md">
+            <h3 className="text-lg mb-4 text-white">
+              {editingPerson ? "Editar Persona" : "Crear Persona"}
+            </h3>
+            <PersonForm
+              initialData={editingPerson ?? undefined}
+              onSubmit={handleSubmit}
+            />
+            <button
+              className="mt-4 text-gray-400 hover:text-gray-200"
+              onClick={() => setIsModalOpen(false)}
+            >
+              Cancelar
+            </button>
+          </div>
         </div>
-    );
+      )}
+    </Layout>
+  );
 }
-
-export default PersonListPage;
